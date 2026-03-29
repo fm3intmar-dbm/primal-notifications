@@ -1,0 +1,149 @@
+# PRIMAL Protocol + INVICTUS Mantra — Pushover Notifications
+# All times are UTC. EDT = UTC-4, so:
+#   6:30 AM EDT  = 10:30 UTC
+#   8:30 AM EDT  = 12:30 UTC
+#   10:30 AM EDT = 14:30 UTC
+#   4:30 PM EDT  = 20:30 UTC
+#   11:00 PM EDT = 03:00 UTC (next day)
+#   6:00 AM EDT  = 10:00 UTC  (PRIMAL briefing on gym days Mon-Fri)
+#   6:45 AM EDT  = 10:45 UTC  (PRIMAL briefing on non-gym days)
+#
+# To keep it simple, PRIMAL briefing fires at 6:00 AM EDT (10:00 UTC) every day.
+# GitHub Actions cron uses UTC. Minimum interval: 5 minutes.
+# NOTE: GitHub may delay scheduled runs by up to ~15 minutes on free tier.
+
+name: PRIMAL + INVICTUS Pushover Notifications
+
+on:
+  schedule:
+    # ── PRIMAL Daily Briefing — 6:00 AM EDT (10:00 UTC) every day ─────────────
+    - cron: '0 10 * * *'
+
+    # ── INVICTUS Morning (Full) — 6:30 AM EDT (10:30 UTC) Mon–Fri ─────────────
+    - cron: '30 10 * * 1-5'
+
+    # ── INVICTUS Midday (Full) — 10:30 AM EDT (14:30 UTC) Mon–Fri ────────────
+    - cron: '30 14 * * 1-5'
+
+    # ── INVICTUS Evening (Pillars only) — 11:00 PM EDT (03:00 UTC next day) ───
+    # 11 PM EDT Mon = 3:00 AM UTC Tue → fires Tue–Sat to cover Mon–Fri evenings
+    - cron: '0 3 * * 2-6'
+
+    # ── INVICTUS Weekend Morning (Full) — 8:30 AM EDT (12:30 UTC) Sat–Sun ─────
+    - cron: '30 12 * * 0,6'
+
+    # ── INVICTUS Weekend Afternoon (Full) — 4:30 PM EDT (20:30 UTC) Sat–Sun ───
+    - cron: '30 20 * * 0,6'
+
+  # Allow manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      notification_type:
+        description: 'Notification type to send'
+        required: true
+        default: 'primal_daily_briefing'
+        type: choice
+        options:
+          - primal_daily_briefing
+          - mantra_morning_full
+          - mantra_midday_full
+          - mantra_evening_pillars
+          - mantra_weekend_morning_full
+          - mantra_weekend_afternoon_full
+
+jobs:
+  # ── PRIMAL Daily Briefing ────────────────────────────────────────────────────
+  primal_briefing:
+    name: PRIMAL Daily Briefing
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.notification_type == 'primal_daily_briefing' || github.event_name == 'schedule' && github.event.schedule == '0 10 * * *'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests
+      - run: python notify.py primal_daily_briefing
+        env:
+          PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+          PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
+
+  # ── INVICTUS Morning (Full) Mon–Fri ─────────────────────────────────────────
+  mantra_morning:
+    name: INVICTUS Morning (Full) Mon-Fri
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.notification_type == 'mantra_morning_full' || github.event_name == 'schedule' && github.event.schedule == '30 10 * * 1-5'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests
+      - run: python notify.py mantra_morning_full
+        env:
+          PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+          PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
+
+  # ── INVICTUS Midday (Full) Mon–Fri ───────────────────────────────────────────
+  mantra_midday:
+    name: INVICTUS Midday (Full) Mon-Fri
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.notification_type == 'mantra_midday_full' || github.event_name == 'schedule' && github.event.schedule == '30 14 * * 1-5'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests
+      - run: python notify.py mantra_midday_full
+        env:
+          PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+          PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
+
+  # ── INVICTUS Evening (Pillars) Mon–Fri ───────────────────────────────────────
+  mantra_evening:
+    name: INVICTUS Evening (Pillars) Mon-Fri
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.notification_type == 'mantra_evening_pillars' || github.event_name == 'schedule' && github.event.schedule == '0 3 * * 2-6'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests
+      - run: python notify.py mantra_evening_pillars
+        env:
+          PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+          PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
+
+  # ── INVICTUS Weekend Morning (Full) ─────────────────────────────────────────
+  mantra_weekend_morning:
+    name: INVICTUS Weekend Morning (Full) Sat-Sun
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.notification_type == 'mantra_weekend_morning_full' || github.event_name == 'schedule' && github.event.schedule == '30 12 * * 0,6'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests
+      - run: python notify.py mantra_weekend_morning_full
+        env:
+          PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+          PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
+
+  # ── INVICTUS Weekend Afternoon (Full) ────────────────────────────────────────
+  mantra_weekend_afternoon:
+    name: INVICTUS Weekend Afternoon (Full) Sat-Sun
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.notification_type == 'mantra_weekend_afternoon_full' || github.event_name == 'schedule' && github.event.schedule == '30 20 * * 0,6'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests
+      - run: python notify.py mantra_weekend_afternoon_full
+        env:
+          PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+          PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
